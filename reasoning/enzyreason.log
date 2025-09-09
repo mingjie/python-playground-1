@@ -1,0 +1,6 @@
+2025-09-06 14:14:35.705 | INFO     | __main__:analyze_mutation:347 - Starting analysis for D219G
+2025-09-06 14:14:37.414 | INFO     | __main__:__init__:46 - Loaded facebook/esm2_t33_650M_UR50D on cuda
+2025-09-06 14:14:37.414 | ERROR    | __main__:analyze_mutation:353 - Mutation application failed: Position 219 out of range for sequence length 98
+2025-09-06 14:18:26.378 | INFO     | __main__:analyze_mutation:347 - Starting analysis for D219G
+2025-09-06 14:18:28.390 | INFO     | __main__:__init__:46 - Loaded facebook/esm2_t33_650M_UR50D on cuda
+2025-09-06 19:39:15.843 | ERROR    | __main__:analyze_mutation:353 - Mutation application failed: Position 219 out of range for sequence length 98
