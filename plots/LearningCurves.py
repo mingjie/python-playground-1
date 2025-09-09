@@ -1,4 +1,10 @@
 # Learning curves for different models
+
+import seaborn as sns
+import matplotlib.pyplot as plt
+import pandas as pd
+import numpy as np
+
 epochs = range(1, 101)
 train_loss_cnn = 1.5 * np.exp(-epochs/30) + np.random.normal(0, 0.05, 100)
 val_loss_cnn = 1.5 * np.exp(-epochs/25) + 0.2 + np.random.normal(0, 0.05, 100)
