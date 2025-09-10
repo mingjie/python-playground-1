@@ -24,6 +24,7 @@ class StructureGNN(nn.Module):
     def forward(self, x, edge_index, batch):
 
         # move data to cuda
+        # LMJ hack
         x = x.to(device)
         edge_index = edge_index.to(device)
         batch = batch.to(device)
