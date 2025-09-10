@@ -74,7 +74,8 @@ class StructureAwareTransformer(nn.Module):
     
     def forward(self, src, src_mask=None, structure_data=None):
 
-        # move data to cuda
+        # move data to cuda if GPU
+        # LMJ hack
         src.to(device)
         src_mask.to(device)
         structure_data.to(device)
