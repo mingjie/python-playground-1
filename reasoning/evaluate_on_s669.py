@@ -7,6 +7,8 @@ import pandas as pd
 import numpy as np
 from scipy.stats import pearsonr, spearmanr
 from sklearn.metrics import roc_auc_score
+#from Bio.PDB import PDBList, PDBParser
+#from Bio.PDB.Polypeptide import aa1, is_aa
 from Bio.PDB import PDBList, PDBParser
 from Bio.PDB.Polypeptide import aa1, is_aa
 import os
