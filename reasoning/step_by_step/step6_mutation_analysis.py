@@ -9,7 +9,8 @@ import math
 # Import from previous steps
 from step5_basic_gnn import StructureAwareTransformer
 
-batch_size = 2
+# LMJ hack
+# batch_size = 2
 
 class MutationalTransformer(nn.Module):
     """Transformer with mutation analysis"""
@@ -92,9 +93,9 @@ class MutationalTransformer(nn.Module):
         pe[:, 0::2] = torch.sin(position * div_term)
         pe[:, 1::2] = torch.cos(position * div_term)
         # LMJ hack
-        print(batch_size)
-        # return pe.unsqueeze(0)
-        return pe.unsqueeze(0).repeat(batch_size, 1, 1)
+        # print(batch_size)
+        return pe.unsqueeze(0)
+        #return pe.unsqueeze(0).repeat(batch_size, 1, 1)
     
     def get_property_values(self, tokens, property_scale):
         """Get property values for tokens"""
