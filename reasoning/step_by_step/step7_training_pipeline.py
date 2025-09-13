@@ -116,6 +116,11 @@ def evaluate_model(model, test_loader):
 if __name__ == "__main__":
     from step1_basic_setup import create_sample_data
     
+    # LMJ hack
+    # Set device
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    print(f"Using device: {device}")
+
     # Create larger sample dataset
     sequences, labels = create_sample_data(200)
     
