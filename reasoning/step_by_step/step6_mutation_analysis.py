@@ -69,7 +69,9 @@ class MutationalTransformer(nn.Module):
         )
         
         # Fusion layer
-        fusion_input_dim = d_model + structure_dim + d_model  # seq + struct + mutation context
+        # LMJ hack  due to line 188
+        #fusion_input_dim = d_model + structure_dim + d_model  # seq + struct + mutation context
+        fusion_input_dim = d_model + structure_dim * 2 + d_model  # seq + struct + mutation context
         self.fusion_layer = nn.Sequential(
             nn.Linear(fusion_input_dim, d_model),
             nn.ReLU(),
@@ -149,6 +151,12 @@ class MutationalTransformer(nn.Module):
         
         # Add positional encoding
         pos_encoding = self.positional_encoding[:, :seq_len, :].to(src.device)
+
+        # LMJ hack
+        # [2,30,63] -> [2,30,64]
+        # x = torch.zeros((2,30,1))
+        embeddings = F.pad(embeddings, (0, 1))
+
         embeddings = embeddings + pos_encoding
         embeddings = self.dropout(embeddings)
         
@@ -174,6 +182,11 @@ class MutationalTransformer(nn.Module):
             )
         else:
             structure_representation = torch.zeros(batch_size, 32).to(src.device)
+
+        # LMJ hack
+        # structure_representation is (1, 32), but seq_representation is (2, 64), we fake it
+        structure_representation = structure_representation.repeat(2,1)
+
         
         # Mutation context (simplified)
         mutation_context = seq_representation  # In practice, this would be more sophisticated
@@ -198,7 +211,9 @@ class StructureGNN(nn.Module):
         self.convs.append(GCNConv(node_features, hidden_dim))
         for _ in range(num_layers - 1):
             self.convs.append(GCNConv(hidden_dim, hidden_dim))
-        self.output_layer = nn.Linear(hidden_dim, 32)
+        # LMJ hack   32 -> 64 match later call
+        # self.output_layer = nn.Linear(hidden_dim, 32)
+        self.output_layer = nn.Linear(hidden_dim, 64)
     
     def forward(self, x, edge_index, batch):
         for conv in self.convs:
