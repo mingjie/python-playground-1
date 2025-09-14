@@ -82,7 +82,7 @@ class ModelComparison:
         predictions = []
         actuals = []
         
-        for item in test_
+        for item in test_data
             # Your model prediction
             pred = model.predict_ddG(item['wild_type'], item['mutant'])
             predictions.append(pred)
