@@ -136,9 +136,13 @@ if __name__ == "__main__":
     test_dataset = ProteinSequenceDataset(test_sequences, test_labels, max_length=50)
     
     # Create data loaders
-    train_loader = DataLoader(train_dataset, batch_size=8, shuffle=True)
-    val_loader = DataLoader(val_dataset, batch_size=8, shuffle=False)
-    test_loader = DataLoader(test_dataset, batch_size=8, shuffle=False)
+    # LMJ hack 
+    # train_loader = DataLoader(train_dataset, batch_size=8, shuffle=True)
+    # val_loader = DataLoader(val_dataset, batch_size=8, shuffle=False)
+    # test_loader = DataLoader(test_dataset, batch_size=8, shuffle=False)
+    train_loader = DataLoader(train_dataset, batch_size=2, shuffle=True)
+    val_loader = DataLoader(val_dataset, batch_size=2, shuffle=False)
+    test_loader = DataLoader(test_dataset, batch_size=2, shuffle=False)
     
     # Initialize model
     model = MutationalTransformer(vocab_size=len(train_dataset.token_to_idx))

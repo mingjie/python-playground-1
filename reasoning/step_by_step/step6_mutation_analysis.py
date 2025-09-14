@@ -72,7 +72,9 @@ class MutationalTransformer(nn.Module):
         # Fusion layer
         # LMJ hack  due to line 188
         #fusion_input_dim = d_model + structure_dim + d_model  # seq + struct + mutation context
-        fusion_input_dim = d_model + structure_dim * 2 + d_model  # seq + struct + mutation context
+        # hack: *2 below should be batch_szie
+        # fusion_input_dim = d_model + structure_dim * 2 + d_model  # seq + struct + mutation context
+        fusion_input_dim = d_model + structure_dim  + d_model  # seq + struct + mutation context
         self.fusion_layer = nn.Sequential(
             nn.Linear(fusion_input_dim, d_model),
             nn.ReLU(),
@@ -160,7 +162,12 @@ class MutationalTransformer(nn.Module):
         # LMJ hack
         # [2,30,63] -> [2,30,64]
         # x = torch.zeros((2,30,1))
+        # Add positional encoding
+        #      Positional encoding: (1, seq_len, d_model)
+        #      Broadcast → (batch_size, seq_len, d_model)
+        # bad: 
         embeddings = F.pad(embeddings, (0, 1))
+        # embeddings = embeddings.repeat(batch_size, 1, 1)
 
         embeddings = embeddings + pos_encoding
         embeddings = self.dropout(embeddings)
@@ -185,12 +192,12 @@ class MutationalTransformer(nn.Module):
                 structure_data.edge_index,
                 structure_data.batch
             )
+            # LMJ hack
+            # structure_representation is (1, 32), but seq_representation is (2, 64), we fake it
+            structure_representation = structure_representation.repeat(batch_size,1)
         else:
             structure_representation = torch.zeros(batch_size, 32).to(src.device)
 
-        # LMJ hack
-        # structure_representation is (1, 32), but seq_representation is (2, 64), we fake it
-        structure_representation = structure_representation.repeat(2,1)
 
         
         # Mutation context (simplified)
