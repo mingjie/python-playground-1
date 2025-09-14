@@ -142,7 +142,7 @@ class MutationalTransformer(nn.Module):
             # LMJ hack
         # Set device
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        print(f"Using device: {device}")
+        # print(f"Using device: {device}")
         src = src.to(device)
 
         # Multi-property embeddings
@@ -242,7 +242,7 @@ if __name__ == "__main__":
     # LMJ hack
     # Set device
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    print(f"Using device: {device}")
+    # print(f"Using device: {device}")
 
     
     # Test the model

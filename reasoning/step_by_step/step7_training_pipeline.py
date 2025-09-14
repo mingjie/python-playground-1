@@ -10,7 +10,7 @@ import numpy as np
 from step6_mutation_analysis import MutationalTransformer
 from step2_tokenization_dataset import ProteinSequenceDataset
 
-def train_model(model, train_loader, val_loader, num_epochs=10, learning_rate=1e-3):
+def train_model(model, train_loader, val_loader, num_epochs=100, learning_rate=1e-3):
     """Training pipeline for the mutational model"""
     
     criterion = nn.MSELoss()
@@ -149,7 +149,7 @@ if __name__ == "__main__":
     
     # Train model
     print("Starting training...")
-    train_losses, val_losses = train_model(model, train_loader, val_loader, num_epochs=5)
+    train_losses, val_losses = train_model(model, train_loader, val_loader, num_epochs=500)
     
     # Evaluate model
     print("\nEvaluating model...")
