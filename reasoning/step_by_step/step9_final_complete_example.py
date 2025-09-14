@@ -137,6 +137,17 @@ class CompleteMutationalTransformer(nn.Module):
         
         # Add positional encoding
         pos_encoding = self.positional_encoding[:, :seq_len, :].to(src.device)
+
+
+        # LMJ hack
+        # x = torch.zeros((2,30,1))
+        # Add positional encoding
+        #      Positional encoding: (1, seq_len, d_model)
+        #      Broadcast → (batch_size, seq_len, d_model)
+        # bad: 
+        embeddings = F.pad(embeddings, (0, 1))
+        # embeddings = embeddings.repeat(batch_size, 1, 1)
+
         embeddings = embeddings + pos_encoding
         embeddings = self.dropout(embeddings)
         
@@ -161,7 +172,9 @@ class CompleteMutationalTransformer(nn.Module):
                 structure_data.batch
             )
         else:
-            structure_representation = torch.zeros(batch_size, 32).to(src.device)
+            # LMJ hack
+            # structure_representation = torch.zeros(batch_size, 32).to(src.device)
+            structure_representation = torch.zeros(batch_size, 64).to(src.device)
         
         # Fusion
         fused_representation = torch.cat([seq_representation, structure_representation], dim=-1)
