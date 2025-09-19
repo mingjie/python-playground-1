@@ -182,4 +182,32 @@ if __name__ == "__main__":
     print("- create_node_features()")
     print("- pdb_to_graph()")
 
-    processor.pdb_to_graph()
+    # processor.pdb_to_graph('./102L.pdb')
+    # Process your PDB file
+    pdb_file = 'reasoning/pdb2graph/102L.pdb'
+    
+    # Check if file exists
+    if not os.path.exists(pdb_file):
+        print(f"File {pdb_file} not found. Please make sure the file exists.")
+        print("You can download it from: https://files.rcsb.org/download/102L.pdb")
+    else:
+        # Process the PDB file
+        graph_data = processor.pdb_to_graph(pdb_file)
+        
+        if graph_data is not None:
+            print("\nGraph data summary:")
+            print(f"Type: {type(graph_data)}")
+            print(f"Number of nodes: {graph_data.num_nodes}")
+            print(f"Number of edges: {graph_data.num_edges}")
+            print(f"Node feature dimension: {graph_data.num_features}")
+            print(f"Sequence length: {len(graph_data.sequence)}")
+            print(f"Sequence: {graph_data.sequence}")
+
+            # Show some example data
+            print(f"\nFirst 5 node features:")
+            print(graph_data.x[:5])
+            
+            print(f"\nFirst 5 edges:")
+            print(graph_data.edge_index[:, :5] if graph_data.edge_index.numel() > 0 else "No edges")
+        else:
+            print("Failed to process PDB file")
