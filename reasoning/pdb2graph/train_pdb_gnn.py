@@ -468,7 +468,7 @@ if __name__ == "__main__":
     # Example usage:
     # For training:
     main(
-        pdb_directory='./reasoning/pdb2graph/data',
+        pdb_directory='./reasoning/pdb2graph/data/pdb',
         output_dir='./reasoning/pdb2graph/models',
         max_files=1000,
         epochs=50,
