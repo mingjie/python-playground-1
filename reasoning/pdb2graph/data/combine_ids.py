@@ -48,7 +48,8 @@ def process_files_advanced(input_pattern, output_file, items_per_file=100,
                         for item in items:
                             outfile.write(item + '\n')
                     else:  # csv format
-                        writer.writerow([file_path] + items)
+                        # writer.writerow([file_path] + items)
+                        writer.writerow(items)
                         
             except Exception as e:
                 print(f"Error processing {file_path}: {e}")
@@ -58,8 +59,10 @@ def process_files_advanced(input_pattern, output_file, items_per_file=100,
 # Example usage
 if __name__ == "__main__":
     # Basic usage - one item per line
-    process_files_advanced("*.txt", "output_lines.txt")
+    # process_files_advanced("*.txt", "output_lines.txt")
     
     # CSV format with filenames
-    process_files_advanced("*.txt", "output_with_filenames.csv", 
-                          output_format='csv', include_filenames=True)
+    # process_files_advanced("./reasoning/pdb2graph/data/*.txt", "output_with_filenames.csv", 
+    #                       output_format='csv', include_filenames=True)
+    process_files_advanced("./reasoning/pdb2graph/data/*.txt", "./reasoning/pdb2graph/data/mixed_ids.csv", 
+                          output_format='csv', include_filenames=False)
