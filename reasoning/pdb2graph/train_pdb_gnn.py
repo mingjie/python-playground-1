@@ -466,6 +466,7 @@ def test_training():
 
 if __name__ == "__main__":
     # Example usage:
+    """
     # For training:
     main(
         pdb_directory='./reasoning/pdb2graph/data/pdb',
@@ -475,16 +476,15 @@ if __name__ == "__main__":
         batch_size=8,
         task='embedding'  # or 'stability', 'classification'
     )
-    
     """
+    
     # For extracting embeddings:
     extract_embeddings(
-        model_path='models/gnn_model_20241201_120000.pth',
-        pdb_directory='/path/to/pdb/files',
+        model_path='./reasoning/pdb2graph/models/gnn_model_20250920_192310.pth',
+        pdb_directory='./reasoning/pdb2graph/data/pdb',
         output_path='structure_embeddings.npy',
         max_files=1000
     )
-    """
     
     """
     # Run test
