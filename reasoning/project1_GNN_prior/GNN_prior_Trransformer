@@ -1,0 +1,188 @@
+# GNN_Prior_Transformer.py
+"""
+transformer with GNN structural priors, with real pdb data
+"""
+import torch
+import torch.nn as nn
+import torch.optim as optim
+import torch.nn.functional as F
+from torch.utils.data import DataLoader, Dataset
+from torch_geometric.nn import GCNConv, global_mean_pool
+from torch_geometric.data import Data
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_squared_error, r2_score
+import pandas as pd
+import numpy as np
+import math
+
+# Device setup
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+print(f"Using device: {device}")
+
+class CompleteMutationalTransformer(nn.Module):
+    """Complete mutational enzyme transformer with GNN structural priors"""
+    
+    def __init__(self, vocab_size=22, d_model=128, nhead=8, num_layers=4,
+                 max_length=200, dropout=0.1, structure_dim=64):
+        super(CompleteMutationalTransformer, self).__init__()
+        
+        self.d_model = d_model
+        self.max_length = max_length
+        
+        # Comprehensive physicochemical properties
+        self.properties = {
+            'hydrophobicity': {
+                'A': 1.8, 'R': -4.5, 'N': -3.5, 'D': -3.5, 'C': 2.5,
+                'Q': -3.5, 'E': -3.5, 'G': -0.4, 'H': -3.2, 'I': 4.5,
+                'L': 3.8, 'K': -3.9, 'M': 1.9, 'F': 2.8, 'P': -1.6,
+                'S': -0.8, 'T': -0.7, 'W': -0.9, 'Y': -1.3, 'V': 4.2,
+                '<PAD>': 0.0, '<UNK>': 0.0
+            },
+            'charge': {
+                'A': 0, 'R': 1, 'N': 0, 'D': -1, 'C': 0,
+                'Q': 0, 'E': -1, 'G': 0, 'H': 1, 'I': 0,
+                'L': 0, 'K': 1, 'M': 0, 'F': 0, 'P': 0,
+                'S': 0, 'T': 0, 'W': 0, 'Y': 0, 'V': 0,
+                '<PAD>': 0, '<UNK>': 0
+            }
+        }
+        
+        # Token mappings
+        self.amino_acids = list(self.properties['hydrophobicity'].keys())
+        self.token_to_idx = {aa: i for i, aa in enumerate(self.amino_acids)}
+        self.idx_to_token = {i: aa for i, aa in enumerate(self.amino_acids)}
+        
+        # Multi-property embeddings
+        embedding_dim = d_model // (len(self.properties) + 1)  # +1 for token identity
+        self.token_embedding = nn.Embedding(vocab_size, embedding_dim)
+        self.property_embeddings = nn.ModuleDict({
+            prop_name: nn.Linear(1, embedding_dim) 
+            for prop_name in self.properties.keys()
+        })
+        
+        # Positional encoding
+        self.positional_encoding = self.create_positional_encoding(max_length, d_model)
+        
+        # Transformer encoder
+        encoder_layer = nn.TransformerEncoderLayer(
+            d_model=d_model,
+            nhead=nhead,
+            dropout=dropout,
+            batch_first=True
+        )
+        self.transformer_encoder = nn.TransformerEncoder(encoder_layer, num_layers)
+        
+        # Structure GNN
+        self.structure_gnn = StructureGNN(
+            node_features=20,
+            hidden_dim=structure_dim * 2,
+            num_layers=3
+        )
+        
+        # Fusion layer
+        fusion_input_dim = d_model + structure_dim  # seq + struct
+        self.fusion_layer = nn.Sequential(
+            nn.Linear(fusion_input_dim, d_model),
+            nn.ReLU(),
+            nn.Dropout(dropout),
+            nn.Linear(d_model, d_model // 2)
+        )
+        
+        # Output layer
+        self.output_layer = nn.Linear(d_model // 2, 1)
+        
+        self.dropout = nn.Dropout(dropout)
+    
+    def create_positional_encoding(self, max_len, d_model):
+        pe = torch.zeros(max_len, d_model)
+        position = torch.arange(0, max_len, dtype=torch.float).unsqueeze(1)
+        div_term = torch.exp(torch.arange(0, d_model, 2).float() * 
+                           (-math.log(10000.0) / d_model))
+        pe[:, 0::2] = torch.sin(position * div_term)
+        pe[:, 1::2] = torch.cos(position * div_term)
+        return pe.unsqueeze(0)
+    
+    def get_property_values(self, tokens, property_name):
+        """Get property values for tokens"""
+        batch_size, seq_len = tokens.shape
+        property_values = torch.zeros(batch_size, seq_len, 1)
+        property_scale = self.properties[property_name]
+        
+        for i in range(batch_size):
+            for j in range(seq_len):
+                token_idx = tokens[i, j].item()
+                if token_idx < len(self.amino_acids):
+                    aa = self.idx_to_token[token_idx]
+                    if aa in property_scale:
+                        property_values[i, j, 0] = property_scale[aa]
+        
+        return property_values
+    
+    def forward(self, src, src_mask=None, structure_data=None):
+        batch_size, seq_len = src.shape
+        
+        # Multi-property embeddings
+        token_embeds = self.token_embedding(src)
+        
+        property_embeds = []
+        for prop_name in self.properties.keys():
+            prop_values = self.get_property_values(src, prop_name)
+            prop_embeds = self.property_embeddings[prop_name](prop_values.to(src.device))
+            property_embeds.append(prop_embeds)
+        
+        # Combine embeddings
+        all_embeds = [token_embeds] + property_embeds
+        embeddings = torch.cat(all_embeds, dim=-1)
+        
+        # Add positional encoding
+        pos_encoding = self.positional_encoding[:, :seq_len, :].to(src.device)
+
+
+        # LMJ hack
+        # x = torch.zeros((2,30,1))
+        # Add positional encoding
+        #      Positional encoding: (1, seq_len, d_model)
+        #      Broadcast → (batch_size, seq_len, d_model)
+        # bad: 
+        embeddings = F.pad(embeddings, (0, 1))
+        # embeddings = embeddings.repeat(batch_size, 1, 1)
+
+        embeddings = embeddings + pos_encoding
+        embeddings = self.dropout(embeddings)
+        
+        # Transformer encoder
+        if src_mask is not None:
+            transformer_output = self.transformer_encoder(embeddings, src_key_padding_mask=src_mask)
+        else:
+            transformer_output = self.transformer_encoder(embeddings)
+        
+        # Sequence representation
+        if src_mask is not None:
+            mask_expanded = (~src_mask).unsqueeze(-1).float()
+            seq_representation = (transformer_output * mask_expanded).sum(dim=1) / mask_expanded.sum(dim=1)
+        else:
+            seq_representation = transformer_output.mean(dim=1)
+        
+        # Structure representation
+        if structure_data is not None:
+            structure_representation = self.structure_gnn(
+                structure_data.x,
+                structure_data.edge_index,
+                structure_data.batch
+            )
+        else:
+            # LMJ hack
+            # structure_representation = torch.zeros(batch_size, 32).to(src.device)
+            structure_representation = torch.zeros(batch_size, 64).to(src.device)
+        
+        # Fusion
+        fused_representation = torch.cat([seq_representation, structure_representation], dim=-1)
+        fused_representation = self.fusion_layer(fused_representation)
+        
+        # Output
+        output = self.output_layer(fused_representation)
+        return output
+
+
+
+        
