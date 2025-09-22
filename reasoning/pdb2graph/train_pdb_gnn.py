@@ -468,7 +468,7 @@ if __name__ == "__main__":
     # Example usage:
     # For training:
     main(
-        pdb_directory='/path/to/pdb/files',
+        pdb_directory='data',
         output_dir='models',
         max_files=1000,
         epochs=50,
