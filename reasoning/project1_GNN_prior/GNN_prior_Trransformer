@@ -1,7 +1,8 @@
-# GNN_Prior_Transformer.py
+# final_complete_example.py
 """
-transformer with GNN structural priors, with real pdb data
+Complete example of mutational enzyme transformer with GNN structural priors
 """
+
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -183,6 +184,224 @@ class CompleteMutationalTransformer(nn.Module):
         output = self.output_layer(fused_representation)
         return output
 
-
-
+class StructureGNN(nn.Module):
+    """GNN for protein structure processing"""
+    
+    def __init__(self, node_features=20, hidden_dim=128, num_layers=3):
+        super(StructureGNN, self).__init__()
         
+        self.convs = nn.ModuleList()
+        self.convs.append(GCNConv(node_features, hidden_dim))
+        
+        for _ in range(num_layers - 1):
+            self.convs.append(GCNConv(hidden_dim, hidden_dim))
+        
+        self.output_layer = nn.Linear(hidden_dim, 32)
+    
+    def forward(self, x, edge_index, batch):
+        # Graph convolutional layers
+        for conv in self.convs:
+            x = conv(x, edge_index)
+            x = F.relu(x)
+        
+        # Global pooling
+        x = global_mean_pool(x, batch)
+        x = self.output_layer(x)
+        return x
+
+class MutationalDataset(Dataset):
+    """Dataset for mutational data"""
+    
+    def __init__(self, sequences, labels, max_length=200):
+        self.sequences = sequences
+        self.labels = labels
+        self.max_length = max_length
+        
+        # Token mappings
+        self.amino_acids = list('ACDEFGHIKLMNPQRSTVWY') + ['<PAD>', '<UNK>']
+        self.token_to_idx = {aa: i for i, aa in enumerate(self.amino_acids)}
+    
+    def __len__(self):
+        return len(self.sequences)
+    
+    def __getitem__(self, idx):
+        sequence = self.sequences[idx]
+        label = self.labels[idx]
+        
+        # Convert sequence to tokens
+        token_ids = []
+        for aa in str(sequence)[:self.max_length]:
+            token_ids.append(self.token_to_idx.get(aa.upper(), self.token_to_idx['<UNK>']))
+        
+        # Pad sequence
+        if len(token_ids) < self.max_length:
+            token_ids.extend([self.token_to_idx['<PAD>']] * (self.max_length - len(token_ids)))
+        
+        return {
+            'sequence': torch.tensor(token_ids, dtype=torch.long),
+            'label': torch.tensor(float(label), dtype=torch.float)
+        }
+
+def create_sample_mutational_data(n_samples=500):
+    """Create sample mutational data"""
+    amino_acids = list('ACDEFGHIKLMNPQRSTVWY')
+    
+    sequences = []
+    labels = []
+    
+    for i in range(n_samples):
+        length = np.random.randint(30, 150)
+        wild_type = ''.join(np.random.choice(amino_acids, length))
+        
+        # Generate mutant
+        mutant = list(wild_type)
+        num_mutations = np.random.randint(1, min(4, length // 10 + 1))
+        mutation_positions = np.random.choice(len(wild_type), num_mutations, replace=False)
+        
+        for pos in mutation_positions:
+            old_aa = mutant[pos]
+            new_aa = np.random.choice([aa for aa in amino_acids if aa != old_aa])
+            mutant[pos] = new_aa
+        
+        mutant = ''.join(mutant)
+        sequences.append(mutant)
+        
+        # Generate ΔΔG
+        ddG = np.random.normal(0, 1.5)
+        labels.append(ddG)
+    
+    return sequences, labels
+
+def train_model(model, train_loader, val_loader, num_epochs=10, learning_rate=1e-3):
+    """Train the model"""
+    criterion = nn.MSELoss()
+    optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=1e-5)
+    
+    model.to(device)
+    
+    for epoch in range(num_epochs):
+        # Training
+        model.train()
+        total_train_loss = 0
+        train_samples = 0
+        
+        for batch in train_loader:
+            sequences = batch['sequence'].to(device)
+            labels = batch['label'].to(device)
+            src_mask = (sequences == 0)
+            
+            optimizer.zero_grad()
+            outputs = model(sequences, src_mask)
+            loss = criterion(outputs.squeeze(), labels.float())
+            loss.backward()
+            optimizer.step()
+            
+            total_train_loss += loss.item() * sequences.size(0)
+            train_samples += sequences.size(0)
+        
+        avg_train_loss = total_train_loss / train_samples
+        
+        # Validation
+        model.eval()
+        total_val_loss = 0
+        val_samples = 0
+        all_preds = []
+        all_labels = []
+        
+        with torch.no_grad():
+            for batch in val_loader:
+                sequences = batch['sequence'].to(device)
+                labels = batch['label'].to(device)
+                src_mask = (sequences == 0)
+                
+                outputs = model(sequences, src_mask)
+                loss = criterion(outputs.squeeze(), labels.float())
+                
+                total_val_loss += loss.item() * sequences.size(0)
+                val_samples += sequences.size(0)
+                all_preds.extend(outputs.squeeze().cpu().numpy())
+                all_labels.extend(labels.cpu().numpy())
+        
+        avg_val_loss = total_val_loss / val_samples
+        val_mse = mean_squared_error(all_labels, all_preds)
+        
+        print(f'Epoch [{epoch+1}/{num_epochs}]')
+        print(f'Train Loss: {avg_train_loss:.4f}, Val Loss: {avg_val_loss:.4f}, Val MSE: {val_mse:.4f}')
+    
+    return model
+
+# Main execution
+if __name__ == "__main__":
+    print("Complete Mutational Enzyme Transformer")
+    print("=" * 40)
+    
+    # Create sample data
+    print("Creating sample mutational data...")
+    sequences, labels = create_sample_mutational_data(300)
+    
+    # Split data
+    train_sequences, test_sequences, train_labels, test_labels = train_test_split(
+        sequences, labels, test_size=0.2, random_state=42
+    )
+    train_sequences, val_sequences, train_labels, val_labels = train_test_split(
+        train_sequences, train_labels, test_size=0.2, random_state=42
+    )
+    
+    # Create datasets
+    print("Creating datasets...")
+    train_dataset = MutationalDataset(train_sequences, train_labels, max_length=100)
+    val_dataset = MutationalDataset(val_sequences, val_labels, max_length=100)
+    test_dataset = MutationalDataset(test_sequences, test_labels, max_length=100)
+    
+    # Create data loaders
+    train_loader = DataLoader(train_dataset, batch_size=16, shuffle=True)
+    val_loader = DataLoader(val_dataset, batch_size=16, shuffle=False)
+    test_loader = DataLoader(test_dataset, batch_size=16, shuffle=False)
+    
+    # Initialize model
+    print("Initializing model...")
+    model = CompleteMutationalTransformer(
+        vocab_size=len(train_dataset.token_to_idx),
+        d_model=64,
+        nhead=4,
+        num_layers=2,
+        max_length=100
+    )
+    
+    print(f"Model parameters: {sum(p.numel() for p in model.parameters()):,}")
+    
+    # Train model
+    print("Training model...")
+    trained_model = train_model(model, train_loader, val_loader, num_epochs=5)
+    
+    # Evaluate model
+    print("Evaluating model...")
+    trained_model.eval()
+    all_preds = []
+    all_labels = []
+    
+    with torch.no_grad():
+        for batch in test_loader:
+            sequences = batch['sequence'].to(device)
+            labels = batch['label'].to(device)
+            src_mask = (sequences == 0)
+            
+            outputs = trained_model(sequences, src_mask)
+            all_preds.extend(outputs.squeeze().cpu().numpy())
+            all_labels.extend(labels.cpu().numpy())
+    
+    mse = mean_squared_error(all_labels, all_preds)
+    r2 = r2_score(all_labels, all_preds)
+    correlation = np.corrcoef(all_labels, all_preds)[0, 1]
+    
+    print(f"\nFinal Results:")
+    print(f'Test MSE: {mse:.4f}')
+    print(f'Test R²: {r2:.4f}')
+    print(f'Test Correlation: {correlation:.4f}')
+    
+    # Show examples
+    print(f"\nExamples:")
+    for i in range(3):
+        print(f"True: {all_labels[i]:.3f}, Predicted: {all_preds[i]:.3f}")
+    
+    print("\nComplete example finished successfully!")
