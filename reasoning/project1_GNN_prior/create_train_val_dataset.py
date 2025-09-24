@@ -68,6 +68,30 @@ class DDGDataProcessor:
         print(self.raw_data.head())
         return self.raw_data
     
+    def get_sequence_from_pdb_file(self,  pdb_id, chain_id):
+        """
+        Extract sequence from a local DB file
+        """
+        try:
+            # load a local PDB file
+            # Parse PDB and extract sequence
+            from io import StringIO
+            from Bio.PDB import PDBParser
+                
+            parser = PDBParser()
+            structure = parser.get_structure(pdb_id, StringIO("./data/{pdb_id}.pdb"))
+                
+            sequence = ""
+            for chain in structure[0]:  # First model
+                if chain.id == chain_id:
+                    for residue in chain:
+                        if residue.get_resname() in self.amino_acids_3to1:
+                            sequence += self.amino_acids_3to1[residue.get_resname()]
+                
+            return sequence
+        except:
+            return None
+    
     def get_sequence_from_pdb(self, pdb_id, chain_id):
         """
         Extract sequence from PDB file
