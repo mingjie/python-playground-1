@@ -91,7 +91,8 @@ class DDGDataProcessor:
             return sequence
         except:
             return None
-    
+
+
     def get_sequence_from_pdb(self, pdb_id, chain_id):
         """
         Extract sequence from PDB file
