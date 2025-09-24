@@ -241,6 +241,37 @@ class MutationalDataset(Dataset):
             'sequence': torch.tensor(token_ids, dtype=torch.long),
             'label': torch.tensor(float(label), dtype=torch.float)
         }
+'''
+def create_sample_mutational_data(n_samples=500):
+    """Create sample mutational data"""
+    amino_acids = list('ACDEFGHIKLMNPQRSTVWY')
+    
+    sequences = []
+    labels = []
+    
+    for i in range(n_samples):
+        length = np.random.randint(30, 150)
+        wild_type = ''.join(np.random.choice(amino_acids, length))
+        
+        # Generate mutant
+        mutant = list(wild_type)
+        num_mutations = np.random.randint(1, min(4, length // 10 + 1))
+        mutation_positions = np.random.choice(len(wild_type), num_mutations, replace=False)
+        
+        for pos in mutation_positions:
+            old_aa = mutant[pos]
+            new_aa = np.random.choice([aa for aa in amino_acids if aa != old_aa])
+            mutant[pos] = new_aa
+        
+        mutant = ''.join(mutant)
+        sequences.append(mutant)
+        
+        # Generate ΔΔG
+        ddG = np.random.normal(0, 1.5)
+        labels.append(ddG)
+    
+    return sequences, labels
+'''
 
 def create_sample_mutational_data(n_samples=500):
     """Create sample mutational data"""
