@@ -5,6 +5,8 @@ Author: Computational Enzymology Lab
 Affiliation: [Your Institution]
 License: MIT
 
+LMJ 
+
 This module implements a transformer-based reasoning engine using ESM-2
 to analyze and explain the impact of point mutations in enzymes.
 """

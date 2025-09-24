@@ -18,6 +18,8 @@ hydrophobicity_scale = {
     'S': -0.8, 'T': -0.7, 'W': -0.9, 'Y': -1.3, 'V': 4.2
 }
 
+
+# LMJ
 # Create sample mutational data
 def create_sample_data(n_samples=100):
     """Create simple sample data for testing"""
