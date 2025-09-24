@@ -79,7 +79,7 @@ class DDGDataProcessor:
             from Bio.PDB import PDBParser
                 
             parser = PDBParser()
-            structure = parser.get_structure(pdb_id, StringIO("./data/{pdb_id}.pdb"))
+            structure = parser.get_structure(pdb_id, StringIO("./data/s559/pdb/{pdb_id}.pdb"))
                 
             sequence = ""
             for chain in structure[0]:  # First model
@@ -132,7 +132,8 @@ class DDGDataProcessor:
             pdb_id = row['pdbid']
             chain_id = row['chainid']
             
-            sequence = self.get_sequence_from_pdb(pdb_id, chain_id)
+            #sequence = self.get_sequence_from_pdb(pdb_id, chain_id)
+            sequence = self.get_sequence_from_pdb_file(pdb_id, chain_id)
             sequences.append(sequence)
         
         df['sequence'] = sequences
