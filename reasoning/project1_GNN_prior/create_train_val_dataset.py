@@ -8,7 +8,8 @@ from Bio.PDB import PDBParser
 import requests
 import os
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import mean_squared_error, pearsonr
+from sklearn.metrics import mean_squared_error
+from scipy.stats import pearsonr
 import torch.nn as nn
 
 class DDGDataProcessor:
