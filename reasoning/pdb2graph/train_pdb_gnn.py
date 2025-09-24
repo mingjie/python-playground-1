@@ -469,8 +469,8 @@ if __name__ == "__main__":
     """
     # For training:
     main(
-        pdb_directory='./reasoning/pdb2graph/data/pdb',
-        output_dir='./reasoning/pdb2graph/models',
+        pdb_directory='/path/to/pdb/files',
+        output_dir='models',
         max_files=1000,
         epochs=50,
         batch_size=8,
